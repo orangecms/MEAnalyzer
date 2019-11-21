@@ -201,6 +201,7 @@ class FPT_Header(ctypes.LittleEndianStructure) : # Flash Partition Table v1.0 & 
 		pt.add_row(['Reserved', 'N/A' if self.UMASize == NA else '0x%X' % self.UMASize])
 		pt.add_row(['Flash Layout', 'N/A' if self.Flags == NA else '%s' % sector_types[self.Flags]])
 		pt.add_row(['Flash Image Tool', 'N/A' if self.FitMajor in [0,0xFFFF] else fit_ver])
+		pt.add_row([col_g + 'FIT version' + col_e, col_c + fit_ver + col_e])
 		
 		return pt
 		
@@ -8627,6 +8628,8 @@ for file_in in source :
 			elif fw_start_match is not None :
 				(start_fw_start_match, end_fw_start_match) = fw_start_match.span()
 				fpt_hdr = get_struct(reading, start_fw_start_match, get_fpt(reading, start_fw_start_match))
+				hdr_print = fpt_hdr.hdr_print_cse()
+				print('\n%s' % hdr_print) # Show details
 				
 				if fpt_hdr.FitBuild != 0 and fpt_hdr.FitBuild != 65535 :
 					fitc_ver = '%s.%s.%s.%s' % (fpt_hdr.FitMajor, fpt_hdr.FitMinor, fpt_hdr.FitHotfix, fpt_hdr.FitBuild)
