@@ -1,6 +1,8 @@
 import json
 import prettytable
 
+from col_lib import *
+
 # Initialize PrettyTable
 def ext_table(row_col_names,header,padd) :
 	pt = prettytable.PrettyTable(row_col_names)

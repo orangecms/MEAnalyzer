@@ -3650,9 +3650,6 @@ def mass_scan(f_path) :
 	
 	return mass_files
 
-# Colorama ANSI Color/Font Escape Character Sequences Regex
-ansi_escape = re.compile(r'\x1b[^m]*m')
-
 # CSE Extensions 0x00-0x16, 0x18-0x1A, 0x30-0x32
 ext_tag_all = list(range(23)) + list(range(24,27)) + list(range(48,51))
 

@@ -1,4 +1,8 @@
 import colorama
+import re
+
+# Colorama ANSI Color/Font Escape Character Sequences Regex
+ansi_escape = re.compile(r'\x1b[^m]*m')
 
 # Initialize and setup Colorama
 colorama.init()
