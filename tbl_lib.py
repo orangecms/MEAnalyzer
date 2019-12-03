@@ -1,3 +1,4 @@
+import json
 import prettytable
 
 # Initialize PrettyTable

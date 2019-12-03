@@ -36,7 +36,7 @@ from SKU import *
 from struct_types import char, uint8_t, uint16_t, uint32_t, uint64_t
 
 from col_lib import *
-from tbl_lib import ext_table
+from tbl_lib import *
 
 # Detect OS platform
 mea_os = sys.platform
