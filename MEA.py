@@ -67,7 +67,7 @@ if mea_os == 'win32' : sys.stdout.reconfigure(encoding='utf-8')
 def mea_help() :
 	
 	text = "\nUsage: MEA [FilePath] {Options}\n\n{Options}\n\n"
-	text += "-?      : Displays help & usage screen\n"
+	text += "-?, -h  : Displays help & usage screen\n"
 	text += "-skip   : Skips welcome & options screen\n"
 	text += "-exit   : Skips Press enter to exit prompt\n"
 	text += "-mass   : Scans all files of a given directory\n"
@@ -88,7 +88,7 @@ class MEA_Param :
 
 	def __init__(self, mea_os, source) :
 	
-		self.all = ['-?','-skip','-extr','-msg','-unp86','-ver86','-bug86','-html','-json','-pdb','-dbname','-mass','-dfpt','-exit','-ftbl']
+		self.all = ['-?','-h','--help','-skip','-extr','-msg','-unp86','-ver86','-bug86','-html','-json','-pdb','-dbname','-mass','-dfpt','-exit','-ftbl']
 		self.win = ['-extr','-msg'] # Windows only
 		
 		if mea_os == 'win32' : self.val = self.all
@@ -112,6 +112,8 @@ class MEA_Param :
 		
 		for i in source :
 			if i == '-?' : self.help_scr = True
+			if i == '-h' : self.help_scr = True
+			if i == '--help' : self.help_scr = True
 			if i == '-skip' : self.skip_intro = True
 			if i == '-unp86' : self.me11_mod_extr = True
 			if i == '-ver86' : self.me11_mod_ext = True
