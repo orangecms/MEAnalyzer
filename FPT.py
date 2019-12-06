@@ -1,6 +1,7 @@
 import ctypes
 
 from struct_types import char, uint8_t, uint16_t, uint32_t, uint64_t
+from tbl_lib import *
 
 class FPT_Pre_Header(ctypes.LittleEndianStructure) : # (ROM_BYPASS)
 	_pack_ = 1

@@ -2921,3 +2921,30 @@ cse_known_bad_hashes = [
 ('4DCF921DC0A48D2967063969ED1314CB17AA03E86635A366E2750BE43A219D95','058C09ABE1D1AB2B28D1D06153908EDAE8B420967D54EC4F1F99AC0D0101454C'), # CSME 11.8.50.3399_COR_H_DA_PRD > WCOD 24F3 > umac_d0
 ('IGNORE','IGNORE') # Ignore CSE firmware groups which are always hashed wrongly (CSME 11.8 SLM Extension 0x3, CSSPS 5 Extension 0x16)
 ]
+
+# CSE Extensions 0x00-0x16, 0x18-0x1A, 0x30-0x32
+ext_tag_all = list(range(23)) + list(range(24,27)) + list(range(48,51))
+
+# CSME 12-14 Revised Extensions
+ext_tag_rev_hdr_csme12 = {0x14:'_R2'}
+
+# CSME 12-14 Revised Extension Modules
+ext_tag_rev_mod_csme12 = {0x1:'_R2', 0xD:'_R2'}
+
+# CSME 15 Revised Extensions
+ext_tag_rev_hdr_csme15 = {0x0:'_R2', 0x3:'_R2', 0xA:'_R2', 0x11:'_R2', 0x13:'_R2', 0x14:'_R3', 0x16:'_R2'}
+
+# CSME 15 Revised Extension Modules
+ext_tag_rev_mod_csme15 = {0xE:'_R2', 0xF:'_R2', 0x10:'_R2', 0x18:'_R2', 0x19:'_R2', 0x1A:'_R2'}
+
+# CSSPS 5 Revised Extensions
+ext_tag_rev_hdr_cssps5 = {}
+
+# CSSPS 5 Revised Extension Modules
+ext_tag_rev_mod_cssps5 = {0x1:'_R2', 0x0:'_R2'}
+
+# CSSPS 5.0.0-3 Revised Extensions
+ext_tag_rev_hdr_cssps503 = {}
+
+# CSSPS 5.0.0-3 Revised Extension Modules
+ext_tag_rev_mod_cssps503 = {0x0:'_R2'}
