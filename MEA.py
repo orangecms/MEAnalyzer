@@ -1727,7 +1727,7 @@ for file_in in source :
 				pmcp_fwu_found = False # CSME12+ FWUpdate tool requires PMC
 				pmcp_size = p_size
 				
-				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, mfs_found)
+				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
 				
 			# Detect if IFWI Primary has CSE File System Partition (Not POR, just in case)
 			if p_name in ('MFS','AFSP') and not p_empty :

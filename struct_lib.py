@@ -1,10 +1,11 @@
 import ctypes
 import json
 
+from BPDT import *
 from CPD import *
 from FPT import *
 from MN2 import *
-	
+
 # Process ctypes Structure Classes
 def get_struct(input_stream, start_offset, class_name, file_end, param_list = None) :
 	if param_list is None : param_list = []
