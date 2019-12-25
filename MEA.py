@@ -408,7 +408,7 @@ def cse_unpack(variant, fpt_part_all, bpdt_part_all, file_end, fpt_start, fpt_ch
 				print(col_y + '\n--> Stored $FPT %s Partition "%s" [0x%0.6X - 0x%0.6X]' % (part_type, part_name, part_start, part_end) + col_e)
 				
 				if part[0] in [b'UTOK',b'STKN'] :
-					ext_print = ext_anl(reading[part_start:part_end], '$MN2', 0x1B, file_end, [variant,major,minor,hotfix,build], part_name, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found) # Retrieve & Store UTOK/STKN Extension Info
+					ext_print = ext_anl(reading[part_start:part_end], '$MN2', 0x1B, file_end, [variant,major,minor,hotfix,build], part_name, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor) # Retrieve & Store UTOK/STKN Extension Info
 					
 					# Print Manifest/Metadata/Key Extension Info
 					for index in range(0, len(ext_print), 2) : # Only Name (index), skip Info (index + 1)
@@ -430,7 +430,7 @@ def cse_unpack(variant, fpt_part_all, bpdt_part_all, file_end, fpt_start, fpt_ch
 					
 				# Store RBEP > rbe and FTPR > pm "Metadata" within Module for Module w/o Metadata Hash validation
 				if part[0] in [b'FTPR',b'RBEP'] :
-					x0,rbe_pm_mod_attr,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14 = ext_anl(reading, '$CPD', part_start, file_end, [variant,major,minor,hotfix,build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+					x0,rbe_pm_mod_attr,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14 = ext_anl(reading, '$CPD', part_start, file_end, [variant,major,minor,hotfix,build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 					
 					for mod in rbe_pm_mod_attr :
 						if mod[0] in ['rbe','pm'] :
@@ -503,7 +503,7 @@ def cse_unpack(variant, fpt_part_all, bpdt_part_all, file_end, fpt_start, fpt_ch
 				print(col_y + '\n--> Stored BPDT %s Partition "%s" [0x%0.6X - 0x%0.6X]' % (part_order, part_name, part_start, part_end) + col_e)
 				
 				if part[0] in ['UTOK'] :
-					ext_print = ext_anl(reading[part_start:part_end], '$MN2', 0x1B, file_end, [variant,major,minor,hotfix,build], part_name, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found) # Retrieve & Store UTOK/STKN Extension Info
+					ext_print = ext_anl(reading[part_start:part_end], '$MN2', 0x1B, file_end, [variant,major,minor,hotfix,build], part_name, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor) # Retrieve & Store UTOK/STKN Extension Info
 					
 					# Print Manifest/Metadata/Key Extension Info
 					for index in range(0, len(ext_print), 2) : # Only Name (index), skip Info (index + 1)
@@ -525,7 +525,7 @@ def cse_unpack(variant, fpt_part_all, bpdt_part_all, file_end, fpt_start, fpt_ch
 					
 				# Store RBEP > rbe and FTPR > pm "Metadata" within Module for Module w/o Metadata Hash validation
 				if part[0] in ['FTPR','RBEP'] :
-					x0,rbe_pm_mod_attr,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14 = ext_anl(reading, '$CPD', part_start, file_end, [variant,major,minor,hotfix,build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+					x0,rbe_pm_mod_attr,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14 = ext_anl(reading, '$CPD', part_start, file_end, [variant,major,minor,hotfix,build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 					
 					for mod in rbe_pm_mod_attr :
 						if mod[0] in ['rbe','pm'] :
@@ -549,7 +549,7 @@ def cse_unpack(variant, fpt_part_all, bpdt_part_all, file_end, fpt_start, fpt_ch
 		(start_cpd_emod, end_cpd_emod) = cpdrange.span()
 		
 		cpd_offset_e,cpd_mod_attr_e,cpd_ext_attr_e,x3,ext12_info,ext_print,x6,x7,ext_phval,ext_dnx_val,x10,x11,x12,ext_iunit_val,x14 \
-		= ext_anl(reading, '$CPD', start_cpd_emod, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+		= ext_anl(reading, '$CPD', start_cpd_emod, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		rbe_pm_met_valid = mod_anl(cpd_offset_e, cpd_mod_attr_e, cpd_ext_attr_e, fw_name, ext_print, ext_phval, ext_dnx_val, ext_iunit_val, rbe_pm_met_hashes, rbe_pm_met_valid, ext12_info)
 		
@@ -916,7 +916,7 @@ def get_variant() :
 		if variant == 'Unknown' : var_rsa_db = False # TBDx are multi-platform RSA Public Keys
 		
 		# Get CSE $CPD Module Names only for targeted variant detection via special ext_anl _Stage1 mode
-		cpd_mod_names,fptemp_info = ext_anl(reading, '$MN2_Stage1', start_man_match, file_end, ['CSME', major, minor, hotfix, build], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+		cpd_mod_names,fptemp_info = ext_anl(reading, '$MN2_Stage1', start_man_match, file_end, ['CSME', major, minor, hotfix, build], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		# Remember to also adjust pmc_anl for PMC Variants
 		
@@ -1406,7 +1406,7 @@ for file_in in source :
 		fpt_matches_init = list((re.compile(br'\x24\x46\x50\x54.\x00\x00\x00', re.DOTALL)).finditer(reading))
 		
 		# No Variant known yet but, if possible, get CSE Stage 1 Info for false positive removal via special ext_anl _Stage1 mode
-		man_mod_names,fptemp_info = ext_anl(reading, '$MN2_Stage1', start_man_match, file_end, ['CSME', 0, 0, 0, 0], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+		man_mod_names,fptemp_info = ext_anl(reading, '$MN2_Stage1', start_man_match, file_end, ['CSME', 0, 0, 0, 0], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		fptemp_exists = True if man_mod_names and man_mod_names[0] == 'FTPR.man' and fptemp_info[0] else False # Detect if CSE FTPR > fptemp module exists
 		
 		# Adjust $FPT matches, ignore known CSE false positives
@@ -1590,7 +1590,7 @@ for file_in in source :
 				pmcp_fwu_found = True # CSME12+ FWUpdate tool requires PMC
 				pmcp_size = p_size
 				
-				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 				
 			# Detect if firmware has CSE File System Partition
 			if p_name in ('MFS','AFSP') and not p_empty :
@@ -1727,7 +1727,7 @@ for file_in in source :
 				pmcp_fwu_found = False # CSME12+ FWUpdate tool requires PMC
 				pmcp_size = p_size
 				
-				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+				x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 				
 			# Detect if IFWI Primary has CSE File System Partition (Not POR, just in case)
 			if p_name in ('MFS','AFSP') and not p_empty :
@@ -1789,7 +1789,7 @@ for file_in in source :
 						pmcp_fwu_found = False # CSME12+ FWUpdate tool requires PMC
 						pmcp_size = s_p_size
 						
-						x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', s_p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+						x0,pmc_mod_attr,x2,pmc_vcn,x4,x5,x6,x7,x8,x9,x10,x11,pmc_mn2_ver,x13,pmc_arb_svn = ext_anl(reading, '$CPD', s_p_offset_spi, file_end, ['CSME', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 					
 					# Detect if IFWI Secondary has CSE File System Partition (Not POR, just in case)
 					if s_p_name in ('MFS','AFSP') and not s_p_empty :
@@ -2647,7 +2647,7 @@ for file_in in source :
 		
 		# Get CSE Firmware Attributes (must be after mfs_anl)
 		cpd_offset,cpd_mod_attr,cpd_ext_attr,vcn,ext12_info,ext_print,ext_pname,ext32_info,ext_phval,ext_dnx_val,oem_config,oem_signed,cpd_mn2_info,ext_iunit_val,arb_svn \
-		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		# MFS missing, determine state via FTPR > fitc.cfg (must be after mfs_anl & ext_anl)
 		if mfs_state == 'Unconfigured' and oem_config : mfs_state = 'Configured'
@@ -2874,7 +2874,7 @@ for file_in in source :
 		
 		# Detect CSE Firmware Attributes (must be after mfs_anl)
 		cpd_offset,cpd_mod_attr,cpd_ext_attr,vcn,ext12_info,ext_print,ext_pname,ext32_info,ext_phval,ext_dnx_val,oem_config,oem_signed,cpd_mn2_info,ext_iunit_val,arb_svn \
-		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		# MFS missing, determine state via FTPR > fitc.cfg (must be after mfs_anl & ext_anl)
 		if mfs_state == 'Unconfigured' and oem_config : mfs_state = 'Configured'
@@ -2967,7 +2967,7 @@ for file_in in source :
 		
 		# Detect CSE Firmware Attributes (must be after mfs_anl)
 		cpd_offset,cpd_mod_attr,cpd_ext_attr,vcn,ext12_info,ext_print,ext_pname,ext32_info,ext_phval,ext_dnx_val,oem_config,oem_signed,cpd_mn2_info,ext_iunit_val,arb_svn \
-		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found)
+		= ext_anl(reading, '$MN2', start_man_match, file_end, [variant, major, minor, hotfix, build], None, [mfs_parsed_idx,intel_cfg_hash_mfs], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		# MFS missing, determine state via FTPR > fitc.cfg (must be after mfs_anl & ext_anl)
 		if mfs_state == 'Unconfigured' and oem_config : mfs_state = 'Configured'
@@ -3019,7 +3019,7 @@ for file_in in source :
 		
 		# Detect CSE Firmware Attributes
 		cpd_offset,cpd_mod_attr,cpd_ext_attr,vcn,ext12_info,ext_print,ext_pname,ext32_info,ext_phval,ext_dnx_val,oem_config,oem_signed,cpd_mn2_info,ext_iunit_val,arb_svn \
-		= ext_anl(reading, '$CPD', 0, file_end, ['NaN', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found)
+		= ext_anl(reading, '$CPD', 0, file_end, ['NaN', -1, -1, -1, -1], None, [[],''], param, fpt_part_all, bpdt_part_all, mfs_found, err_stor)
 		
 		pmc_fw_ver,pmc_pch_gen,pmc_pch_sku,pmc_pch_rev,pmc_fw_rel,pmc_mn2_signed,pmc_mn2_signed_db,upd_found,pmc_platform,pmc_date,pmc_svn,pmc_pvbit = pmc_anl(cpd_mn2_info, cpd_mod_attr)
 		

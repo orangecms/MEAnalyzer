@@ -6,7 +6,7 @@ from struct_lib import *
 
 # Analyze CSE Extensions
 # noinspection PyUnusedLocal
-def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man_name, mfs_idx_cfg, param, fpt_part_all, bpdt_part_all, mfs_found):
+def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man_name, mfs_idx_cfg, param, fpt_part_all, bpdt_part_all, mfs_found, err_stor):
 	vcn = -1
 	in_id = 0
 	cpd_num = 0
@@ -125,7 +125,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 			cpd_valid,cpd_chk_fw,cpd_chk_exp = cpd_chk(buffer[cpd_offset:cpd_offset + cpd_hdr_size + cpd_num * 0x18])
 			
 			if not cpd_valid :
-				cse_anl_err(col_r + 'Error: Wrong $CPD "%s" Checksum 0x%0.2X, expected 0x%0.2X' % (cpd_name, cpd_chk_fw, cpd_chk_exp) + col_e, None)
+				cse_anl_err(col_r + 'Error: Wrong $CPD "%s" Checksum 0x%0.2X, expected 0x%0.2X' % (cpd_name, cpd_chk_fw, cpd_chk_exp) + col_e, None, err_stor, param)
 		
 		# Stage 1: Store $CPD Entry names to detect Partition attributes for MEA
 		for entry in range(0, cpd_num) :
@@ -146,7 +146,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 			
 			# Check if $CPD Entry Reserved field is zero, skip at special _Stage1 mode
 			if (cpd_entry_res0,cpd_entry_res1) != (0,0) and not input_type.endswith('_Stage1') :
-				cse_anl_err(col_m + 'Warning: Detected $CPD Entry with non-zero Reserved field at %s > %s' % (cpd_name, cpd_entry_name) + col_e, None)
+				cse_anl_err(col_m + 'Warning: Detected $CPD Entry with non-zero Reserved field at %s > %s' % (cpd_name, cpd_entry_name) + col_e, None, err_stor, param)
 			
 			cpd_wo_met_info.append([cpd_entry_name,cpd_entry_offset,cpd_entry_size,cpd_entry_huff,cpd_entry_res0,cpd_entry_res1])
 		
@@ -231,7 +231,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 				# Break loop just in case it becomes infinite
 				loop_break += 1
 				if loop_break > 100 :
-					cse_anl_err(col_r + 'Error: Forced CSE Extension Analysis break after 100 loops at %s > %s!' % (cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+					cse_anl_err(col_r + 'Error: Forced CSE Extension Analysis break after 100 loops at %s > %s!' % (cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					break
 				
 				# Determine if Entry is Empty/Missing
@@ -245,11 +245,11 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 				# Detect unknown CSE Extension & notify user
 				if ext_tag not in ext_tag_all :
 					cse_anl_err(col_r + 'Error: Detected unknown CSE Extension 0x%0.2X at %s > %s!\n       Some modules may not be detected without adding 0x%0.2X support!'
-					% (ext_tag, cpd_name, cpd_entry_name.decode('utf-8'), ext_tag) + col_e, None)
+					% (ext_tag, cpd_name, cpd_entry_name.decode('utf-8'), ext_tag) + col_e, None, err_stor, param)
 				
 				# Detect CSE Extension data overflow & notify user
 				if entry_empty == 0 and (cpd_ext_end > cpd_entry_offset + cpd_entry_size) : # Manifest/Metadata Entry overflow
-					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X data overflow at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X data overflow at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 				
 				hdr_rev_tag = '' # CSE Extension Header Revision Tag
 				mod_rev_tag = '' # CSE Extension Module Revision Tag
@@ -283,7 +283,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 						
 						# Detect CSE Extension without Modules different size & notify user
 						if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 						
 						if ext_tag == 0xC : # CSE_Ext_0C requires Variant & Version input
 							ext_hdr_p = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end, ftpr_var_ver)
@@ -305,7 +305,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 							
 							# Check if RCIP length is divisible by RCIP Chunk length and if RCIP Chunk count from EXT is the same as MEA's
 							if (dnx_rcip_len % rcip_chunk_size != 0) or (rcip_chunk_count_ext != rcip_chunk_count_mea) :
-								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 							
 							# Parse each IFWI Region Map
 							for region in range(ifwi_rgn_count) :
@@ -361,7 +361,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 								
 								# Check if RCIP length is divisible by RCIP Chunk length and if Hashes Array file section length is divisible by its Size
 								if (dnx_rcip_len % rcip_chunk_size != 0) or (len(hash_arr_part_data) % hash_arr_part_size != 0) :
-									cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+									cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 								
 								# Check if Hashes Array file section Hash is valid to Hashes Array file section Header
 								if hash_arr_part_hash == hash_arr_part_data_hash : hash_arr_valid_count += 1
@@ -428,11 +428,11 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 							# Check Extension full size when Module Counter exists
 							if ext_tag in ext_tag_mod_count and (cpd_ext_size != ext_length + part_id_count * CSE_Ext_15_PartID_length + CSE_Ext_15_Payload_length +
 							payload_knob_count * CSE_Ext_15_Payload_Knob_length) :
-								cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+								cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 							
 							# Check if Knob data is divisible by Knob size
 							if payload_knob_area % CSE_Ext_15_Payload_Knob_length != 0 :
-								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 							
 							for knob in range(payload_knob_count) :
 								payload_knob_struct = get_struct(buffer, cpd_payload_knob_offset, CSE_Ext_15_Payload_Knob, ftpr_var_ver, file_end)
@@ -446,11 +446,11 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 							
 							# Check Extension full size when Module Counter exists
 							if ext_tag in ext_tag_mod_count and (cpd_ext_size != ext_length + ext_hdr_p.ModuleCount * mod_length) :
-								cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+								cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 							
 							# Check if Mod data is divisible by Mod size
 							if cpd_mod_area % mod_length != 0 :
-								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+								cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 							
 							while cpd_mod_offset < cpd_ext_end :
 								mod_hdr_p = get_struct(buffer, cpd_mod_offset, ext_struct_mod, file_end)
@@ -467,12 +467,12 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					# Validate CSME/CSSPS MFS Intel Configuration (Low Level File 6) Hash at Non-Initialized/Non-FWUpdated MFS
 					if intel_cfg_hash_mfs and mfs_found and mfs_parsed_idx and 8 not in mfs_parsed_idx and intel_cfg_hash_ext not in intel_cfg_hash_mfs :
 						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong $FPT MFS Intel Configuration Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e,
-						(intel_cfg_hash_ext,intel_cfg_hash_mfs))
+						(intel_cfg_hash_ext,intel_cfg_hash_mfs), err_stor, param)
 					
 					# Validate CSTXE or CSME 12 Alpha MFS/AFS Intel Configuration (FTPR > intl.cfg) Hash
 					if intel_cfg_hash_ftpr and intel_cfg_ftpr and intel_cfg_hash_ext not in intel_cfg_hash_ftpr :
 						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong FTPR MFS Intel Configuration Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e,
-						(intel_cfg_hash_ext,intel_cfg_hash_ftpr))
+						(intel_cfg_hash_ext,intel_cfg_hash_ftpr), err_stor, param)
 					
 					# Detect unexpected inability to validate Non-Initialized/Non-FWUpdated $FPT (Low Level File 6) or FTPR (intl.cfg) MFS/AFS Intel Configuration Hash
 					if (
@@ -486,7 +486,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
                not intel_cfg_hash_ftpr
              )
            ) and not param.me11_mod_extr :
-						cse_anl_err(col_m + 'Warning: Could not validate CSE Extension 0x%0.2X MFS Intel Configuration Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_m + 'Warning: Could not validate CSE Extension 0x%0.2X MFS Intel Configuration Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 				
 				elif ext_tag == 0x1 :
 					ext_hdr = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end)
@@ -496,7 +496,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check Extension full size when Module Counter exists
 					if ext_tag in ext_tag_mod_count and (cpd_ext_size != CSE_Ext_01_length + ext_hdr.ModuleCount * CSE_Ext_01_Mod_length) :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 				
 				elif ext_tag == 0x2 :
 					ext_hdr = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end)
@@ -506,7 +506,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check Extension full size when Module Counter exists
 					if ext_tag in ext_tag_mod_count and (cpd_ext_size != CSE_Ext_02_length + ext_hdr.ModuleCount * CSE_Ext_02_Mod_length) :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 				
 				elif ext_tag == 0x3 :
 					ext_hdr = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end)
@@ -528,15 +528,15 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 						ext_phval = [True, ext_phash == mea_phash, ext_phash, mea_phash]
 						if not ext_phval[1] and int(ext_phval[2], 16) != 0 :
 							if (variant,major,minor,ext_psize) == ('CSME',11,8,0x88000) : (ext_phash, mea_phash) = ('IGNORE', 'IGNORE') # CSME 11.8 Slim Partition Hash is always wrong, ignore
-							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong Partition Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, (ext_phash,mea_phash))
+							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong Partition Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, (ext_phash,mea_phash), err_stor, param)
 					
 					# Check Extension full size when Module Counter exists
 					if ext_tag in ext_tag_mod_count and (cpd_ext_size != CSE_Ext_03_length + ext_hdr.ModuleCount * CSE_Ext_03_Mod_length) :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					# Check if Mod data is divisible by Mod size
 					if CSE_Ext_03_Mod_area % CSE_Ext_03_Mod_length != 0 :
-						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 						
 					while cpd_mod_offset < cpd_ext_end :
 						mod_hdr_p = get_struct(buffer, cpd_mod_offset, ext_struct_mod, file_end)
@@ -555,7 +555,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Detect CSE Extension without Modules different size & notify user
 					if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					mod_comp_type = ext_hdr.Compression # Metadata's Module Compression Type (0-2)
 					mod_encr_type = ext_hdr.Encryption # Metadata's Module Encryption Type (0-1)
@@ -571,7 +571,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Detect CSE Extension without Modules different size & notify user
 					if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					fw_0C_cse,fw_0C_sku1,fw_0C_lbg,fw_0C_m3,fw_0C_m0,fw_0C_sku2,fw_0C_sicl,fw_0C_res2 = ext_hdr.get_flags()
 					
@@ -589,7 +589,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check if Mod data is divisible by Mod size
 					if CSE_Ext_0F_Mod_area % CSE_Ext_0F_Mod_length != 0 :
-						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					while cpd_mod_offset < cpd_ext_end :
 						mod_hdr_p = get_struct(buffer, cpd_mod_offset, ext_struct_mod, file_end)
@@ -614,7 +614,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check if iUnit Entries/Chunks Area is divisible by Entry/Chunk Size size
 					if CSE_Ext_10_Chunk_count[1] != 0 :
-						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					# Parse all iUnit Module Chunks via their Extension Metadata
 					for chunk in range(CSE_Ext_10_Chunk_count[0]) :
@@ -638,7 +638,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Detect CSE Extension without Modules different size & notify user
 					if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					mod_unk_size = ext_hdr.SizeUnknown # Metadata's Module Unknown Size (needs to be subtracted from SizeUncomp)
 					mod_uncomp_size = ext_hdr.SizeUncomp # Metadata's Module Uncompressed Size (SizeUnknown + SizeUncomp = $CPD Entry's Module Size)
@@ -655,7 +655,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check Extension full size when Module Counter exists
 					if ext_tag in ext_tag_mod_count and (cpd_ext_size != CSE_Ext_12_length + ext_hdr.ModuleCount * CSE_Ext_12_Mod_length) :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with Module Count size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 				
 				elif ext_tag == 0x13 :
 					ext_hdr = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end)
@@ -663,7 +663,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Detect CSE Extension without Modules different size & notify user
 					if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 					
 					ibbl_hash = ''.join('%0.8X' % int.from_bytes(struct.pack('<I', val), 'big') for val in ext_hdr.IBBLHash) # IBBL Hash (BE)
 					ibb_hash = ''.join('%0.8X' % int.from_bytes(struct.pack('<I', val), 'big') for val in ext_hdr.IBBHash) # IBB Hash (BE)
@@ -690,11 +690,11 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 						ext_phval = [True, ext_phash == mea_phash, ext_phash, mea_phash]
 						if not ext_phval[1] and int(ext_phval[2], 16) != 0 :
 							if (variant,major) == ('CSSPS',5) : (ext_phash, mea_phash) = ('IGNORE', 'IGNORE') # CSSPS 5 Partition Hash is always wrong, ignore
-							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong Partition Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, (ext_phash,mea_phash))
+							cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X with wrong Partition Hash at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, (ext_phash,mea_phash), err_stor, param)
 					
 					# Detect CSE Extension without Modules different size & notify user
 					if ext_tag in ext_tag_mod_none and cpd_ext_size != ext_length :
-						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected CSE Extension 0x%0.2X w/o Modules size difference at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 
 				elif ext_tag in (0x18,0x19,0x1A) :
 					ext_hdr = get_struct(buffer, cpd_ext_offset, ext_struct_name, file_end)
@@ -706,7 +706,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 					
 					# Check if Mod data is divisible by Mod size
 					if CSE_Ext_TCSS_Mod_area % CSE_Ext_TCSS_Mod_length != 0 :
-						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						cse_anl_err(col_r + 'Error: Detected non-divisible CSE Extension 0x%0.2X at %s > %s!' % (ext_tag, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 						
 					while cpd_mod_offset < cpd_ext_end :
 						mod_hdr_p = get_struct(buffer, cpd_mod_offset, ext_struct_mod, file_end)
@@ -715,7 +715,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 						tcss_hash = ''.join('%0.8X' % int.from_bytes(struct.pack('<I', val), 'big') for val in mod_hdr_p.Hash) # Hash (BE)
 						
 						if tcss_type in tcss_types : cpd_mod_attr.append([tcss_types[tcss_type], 0, 0, 0, 0, 0, 0, tcss_hash, cpd_name, 0, mn2_sigs, cpd_offset, cpd_valid])
-						else : cse_anl_err(col_r + 'Error: Detected unknown CSE TCSS Type %d at %s > %s!' % (tcss_type, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+						else : cse_anl_err(col_r + 'Error: Detected unknown CSE TCSS Type %d at %s > %s!' % (tcss_type, cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 						
 						cpd_mod_offset += CSE_Ext_TCSS_Mod_length
 				
@@ -775,11 +775,11 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 		else : # For the last entry, if CSE Extension 0x3/0x16 is missing, find its size manually via EOF 0xFF padding
 			entry_size = buffer[cpd_offset + cpd_wo_met_info[i][1]:].find(b'\xFF\xFF') # There is no Huffman codeword 0xFFFF
 			if entry_size != -1 : cpd_wo_met_info[i][2] = entry_size # Size ends where the padding starts
-			else : cse_anl_err(col_r + 'Error: Could not determine size of Module %s > %s!' % (cpd_name,cpd_wo_met_info[i][0]) + col_e, None)
+			else : cse_anl_err(col_r + 'Error: Could not determine size of Module %s > %s!' % (cpd_name,cpd_wo_met_info[i][0]) + col_e, None, err_stor, param)
 			
 		if cpd_wo_met_info[i][2] > cpd_wo_met_back[i][2] or cpd_wo_met_info[i][2] < 0 : # Report obvious wrong Module Size adjustments
 			cpd_wo_met_info[i][2] = cpd_wo_met_back[i][2] # Restore default Module Size from backup in case of wrong adjustment
-			cse_anl_err(col_r + 'Error: Could not determine size of Module %s > %s!' % (cpd_name,cpd_wo_met_info[i][0]) + col_e, None)
+			cse_anl_err(col_r + 'Error: Could not determine size of Module %s > %s!' % (cpd_name,cpd_wo_met_info[i][0]) + col_e, None, err_stor, param)
 	
 	# Stage 4: Fill Metadata Hash from Manifest
 	for attr in cpd_ext_attr :
@@ -840,7 +840,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 				# The check is skipped when IDLM partition (DLMP) is parsed because its $FPT size is wrong by Intel design.
 				if not msg_shown and ext_psize != -1 and part[0] == cpd_hdr.PartitionName and part[0] != b'DLMP' \
 				and part[1] == cpd_offset and part[3] == in_id and part[2] < (cpd_offset + ext_psize) :
-					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x3/0x16 with smaller $FPT %s Partition Size!' % cpd_name + col_e, None)
+					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x3/0x16 with smaller $FPT %s Partition Size!' % cpd_name + col_e, None, err_stor, param)
 					msg_shown = True # Partition related error, show only once
 			
 			# Detect BPDT Partition Size mismatch vs CSE_Ext_03/16
@@ -851,7 +851,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 				# The check is skipped when IDLM partition (DLMP) is parsed because its BPDT size is wrong by Intel design.
 				if not msg_shown and ext_psize != -1 and part[0] == cpd_hdr.PartitionName.decode('utf-8') and part[0] != 'DLMP' \
 				and part[1] == cpd_offset and part[6] == in_id and part[2] < (cpd_offset + ext_psize) :
-					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x3/0x16 with smaller BPDT %s Partition Size!' % cpd_name + col_e, None)
+					cse_anl_err(col_r + 'Error: Detected CSE Extension 0x3/0x16 with smaller BPDT %s Partition Size!' % cpd_name + col_e, None, err_stor, param)
 					msg_shown = True # Partition related error, show only once
 					
 		# Key
@@ -901,7 +901,7 @@ def ext_anl(buffer, input_type, input_offset, file_end, ftpr_var_ver, single_man
 		
 		# Detect Modules which exceed or are located at/after the end of RGN Partition size (CSE_Ext_03/16.PartitionSize)
 		if not oem_config and not oem_signed and ext_psize != -1 and ((cpd_entry_offset >= cpd_offset + ext_psize) or (cpd_entry_offset + mod_size > cpd_offset + ext_psize)) :
-			cse_anl_err(col_r + 'Error: Detected out of Partition bounds Module at %s > %s!' % (cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None)
+			cse_anl_err(col_r + 'Error: Detected out of Partition bounds Module at %s > %s!' % (cpd_name, cpd_entry_name.decode('utf-8')) + col_e, None, err_stor, param)
 		
 	# Stage 6: Remove missing APL IBBP Module Attributes
 	if len(ibbp_all) :
@@ -1346,7 +1346,7 @@ def mod_anl(cpd_offset, cpd_mod_attr, cpd_ext_attr, fw_name, ext_print, ext_phva
 	return rbe_pm_met_valid
 	
 # Store and show CSE Analysis Errors
-def cse_anl_err(ext_err_msg, checked_hashes) :
+def cse_anl_err(ext_err_msg, checked_hashes, err_stor, param):
 	if checked_hashes is None : checked_hashes = ('','')
 	
 	copy_file = False if checked_hashes in cse_known_bad_hashes else True
@@ -1390,8 +1390,8 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 		mfsb_patterns = re.compile(br'\x01\x03\x02\x04').finditer(mfsb_buffer) # Each MFS Backup Chunk ends with 0x01030204
 		mfsb_end = re.compile(br'\xFF{32}').search(mfsb_buffer).start() # MFS Backup Buffer ends where enough Padding (0xFF) is found
 		
-		if mfsb_crc32 != mea_crc32 : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS Backup Header CRC-32 is INVALID!' + col_e, 'error', False, False, [])
-		else : mfs_tmp_page = mfs_anl_msg(col_g + 'MFS Backup Header CRC-32 is VALID' + col_e, '', False, False, [])
+		if mfsb_crc32 != mea_crc32 : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS Backup Header CRC-32 is INVALID!' + col_e, 'error', False, False, [], err_stor, param)
+		else : mfs_tmp_page = mfs_anl_msg(col_g + 'MFS Backup Header CRC-32 is VALID' + col_e, '', False, False, [], err_stor, param)
 		
 		data_start = 0 # Starting Offset of each MFS Backup Chunk
 		mfs_buffer_init = b'' # Actual MFS Buffer from converted MFS Backup state
@@ -1481,9 +1481,9 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 		
 		# Verify System/Data/Scratch Page CRC-8
 		if page_hdr_crc8_mea != page_hdr_crc8_int :
-			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d Header CRC-8 is INVALID!' % (page_type, page_number) + col_e, 'error', True, False, mfs_tmp_page)
+			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d Header CRC-8 is INVALID!' % (page_type, page_number) + col_e, 'error', True, False, mfs_tmp_page, err_stor, param)
 		else :
-			mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d Header CRC-8 is VALID' % (page_type, page_number) + col_e, '', True, False, mfs_tmp_page)
+			mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d Header CRC-8 is VALID' % (page_type, page_number) + col_e, '', True, False, mfs_tmp_page, err_stor, param)
 		
 		if page_tag != 0xAA557887 : continue # Skip Scratch Page after CRC-8 check
 		
@@ -1517,12 +1517,12 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 				chunk_crc16_mea = crccheck.crc.Crc16.calc(chunk_raw + struct.pack('<H', chunk_index), initvalue = 0xFFFF) # MEA CRC-16 of Chunk (0x40) with initial value of 0xFFFF
 				
 				if chunk_crc16_mea != chunk_crc16_int :
-					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d > Chunk %d CRC-16 is INVALID!' % (page_type, page_number, chunk_index) + col_e, 'error', True, True, mfs_tmp_page)
+					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d > Chunk %d CRC-16 is INVALID!' % (page_type, page_number, chunk_index) + col_e, 'error', True, True, mfs_tmp_page, err_stor, param)
 				else :
-					chunk_healthy += 1 #mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d > Chunk %d CRC-16 is VALID' % (page_type, page_number, chunk_index) + col_e, '', True, True, mfs_tmp_page)
+					chunk_healthy += 1 #mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d > Chunk %d CRC-16 is VALID' % (page_type, page_number, chunk_index) + col_e, '', True, True, mfs_tmp_page, err_stor, param)
 			
 			if chunk_used_count and chunk_used_count == chunk_healthy :
-				mfs_tmp_page = mfs_anl_msg(col_g + 'All MFS %s Page %d Chunks (%d) CRC-16 are VALID' % (page_type, page_number, chunk_used_count) + col_e, '', True, True, mfs_tmp_page)
+				mfs_tmp_page = mfs_anl_msg(col_g + 'All MFS %s Page %d Chunks (%d) CRC-16 are VALID' % (page_type, page_number, chunk_used_count) + col_e, '', True, True, mfs_tmp_page, err_stor, param)
 		
 		# MFS Data Page
 		elif page_type == 'Data' :
@@ -1546,12 +1546,12 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 					chunk_crc16_mea = crccheck.crc.Crc16.calc(chunk_raw + struct.pack('<H', chunk_index), initvalue = 0xFFFF) # MEA CRC-16 of Chunk (0x40) with initial value of 0xFFFF
 					
 					if chunk_crc16_mea != chunk_crc16_int :
-						mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d > Chunk %d CRC-16 is INVALID!' % (page_type, page_number, chunk_index) + col_e, 'error', True, True, mfs_tmp_page)
+						mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS %s Page %d > Chunk %d CRC-16 is INVALID!' % (page_type, page_number, chunk_index) + col_e, 'error', True, True, mfs_tmp_page, err_stor, param)
 					else :
-						chunk_healthy += 1 #mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d > Chunk %d CRC-16 is VALID' % (page_type, page_number, chunk_index) + col_e, '', True, True, mfs_tmp_page)
+						chunk_healthy += 1 #mfs_tmp_page = mfs_anl_msg(col_g + 'MFS %s Page %d > Chunk %d CRC-16 is VALID' % (page_type, page_number, chunk_index) + col_e, '', True, True, mfs_tmp_page, err_stor, param)
 			
 			if chunk_used_count and chunk_used_count == chunk_healthy :
-				mfs_tmp_page = mfs_anl_msg(col_g + 'All MFS %s Page %d Chunks (%d) CRC-16 are VALID' % (page_type, page_number, chunk_used_count) + col_e, '', True, True, mfs_tmp_page)
+				mfs_tmp_page = mfs_anl_msg(col_g + 'All MFS %s Page %d Chunks (%d) CRC-16 are VALID' % (page_type, page_number, chunk_used_count) + col_e, '', True, True, mfs_tmp_page, err_stor, param)
 	
 	# Print/Store MFS Page Records during CSE Unpacking
 	if param.me11_mod_extr :
@@ -1569,7 +1569,7 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 	
 	# Parse MFS System Volume Structure
 	if not all_chunks_dict :
-		mfs_anl_msg(col_r + 'Error: MFS final System Area Buffer is empty!' + col_e, 'error', False, False, [])
+		mfs_anl_msg(col_r + 'Error: MFS final System Area Buffer is empty!' + col_e, 'error', False, False, [], err_stor, param)
 		return mfs_parsed_idx, intel_cfg_hash_mfs, mfs_info, pch_init_final # The final System Area Buffer must not be empty
 	vol_hdr = get_struct(all_chunks_dict[0], 0, MFS_Volume_Header, file_end) # System Volume is at the LAST Index 0 Chunk (the dictionary does that automatically)
 	if param.me11_mod_extr :
@@ -1580,8 +1580,8 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 	vol_total_size = vol_hdr.VolumeSize # Size of MFS System & Data Volume via Volume
 	mea_total_size = chunks_count_sys * (chunk_size - 2) + chunks_max_dat * (chunk_size - 2) # Size of MFS System & Data Volume via MEA
 	
-	if vol_total_size != mea_total_size : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS System Volume Size missmatch!' + col_e, 'error', False, False, [])
-	else : mfs_tmp_page = mfs_anl_msg(col_g + 'MFS System Volume Size is VALID' + col_e, '', False, False, [])
+	if vol_total_size != mea_total_size : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS System Volume Size missmatch!' + col_e, 'error', False, False, [], err_stor, param)
+	else : mfs_tmp_page = mfs_anl_msg(col_g + 'MFS System Volume Size is VALID' + col_e, '', False, False, [], err_stor, param)
 	
 	# Parse MFS File Allocation Table
 	fat_count = vol_file_rec + chunks_max_dat # MFS FAT Value Count (Low Level Files + their Data Chunks)
@@ -1598,13 +1598,13 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			while True :
 				# Data FAT Values (Low Level File Chunks) start after Volume FAT Values (Low Level File Numbers/1st Chunk)
 				if fat_value < vol_file_rec :
-					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS File %d > FAT Value %d less than Volume Files Count %d!' % (index,fat_value,vol_file_rec) + col_e, 'error', False, False, [])
+					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS File %d > FAT Value %d less than Volume Files Count %d!' % (index,fat_value,vol_file_rec) + col_e, 'error', False, False, [], err_stor, param)
 					break # Critical error while parsing Used File FAT Value
 				
 				# Data Page Chunks start after System Page Chunks and their Volume FAT Values
 				file_chunk_index = chunks_count_sys + fat_value - vol_file_rec # Determine File Chunk Index for MFS Chunk Index & Data Dictionary use
 				if file_chunk_index not in all_chunks_dict : # The File Chunk index/key must exist at the MFS Chunk Index & Data Dictionary
-					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS File %d > Chunk %d not in Total Chunk Index/Data Area!' % (index,file_chunk_index) + col_e, 'error', False, False, [])
+					mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS File %d > Chunk %d not in Total Chunk Index/Data Area!' % (index,file_chunk_index) + col_e, 'error', False, False, [], err_stor, param)
 					break # Critical error while parsing Used File FAT Value
 				
 				file_chunk = all_chunks_dict[file_chunk_index] # Get File Chunk contents from the MFS Chunk Index & Data Dictionary
@@ -1620,7 +1620,7 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			mfs_files.append([index, file_chunks]) # Store MFS Low Level File Index & Contents
 	
 	if all_mfs_sys[vol_hdr_size + fat_count * 2:] != b'\x00' * fat_trail : # MFS FAT End Trail Contents should be all zeros
-		mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected additional MFS System Buffer contents after FAT ending!' + col_e, 'error', False, False, [])
+		mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected additional MFS System Buffer contents after FAT ending!' + col_e, 'error', False, False, [], err_stor, param)
 	
 	# Parse MFS Low Level Files
 	for mfs_file in mfs_files :
@@ -1639,8 +1639,8 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 				print('\n%s' % file_sec_ptv) # Print Integrity Structure Info during Verbose CSE Unpacking
 			file_data_path = os.path.join(file_folder, 'Contents.bin') # MFS Low Level File Contents Path
 			file_sec_path = os.path.join(file_folder, 'Integrity.bin') # MFS Low Level File Integrity Path
-			mfs_write(file_folder, file_data_path, file_data) # Store MFS Low Level File Contents
-			mfs_write(file_folder, file_sec_path, file_sec) # Store MFS Low Level File Integrity
+			mfs_write(file_folder, file_data_path, file_data, param) # Store MFS Low Level File Contents
+			mfs_write(file_folder, file_sec_path, file_sec, param) # Store MFS Low Level File Integrity
 			mfs_txt(file_sec_hdr.mfs_print(), file_folder, file_sec_path, 'w', False) # Store/Print MFS Low Level File Integrity Info
 		
 		# Parse MFS Low Level File 5 (Quota Storage)
@@ -1655,7 +1655,7 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			if variant == 'CSME' and major >= 12 :
 				file_data = mfs_file[1][:-sec_hdr_size] # MFS Low Level File 5 Contents without Integrity
 				file_sec = mfs_file[1][-sec_hdr_size:] # MFS Low Level File 5 Integrity without Contents
-				mfs_write(file_folder, file_sec_path, file_sec) # Store MFS Low Level File 5 Integrity
+				mfs_write(file_folder, file_sec_path, file_sec, param) # Store MFS Low Level File 5 Integrity
 				file_sec_hdr = get_struct(file_sec, 0, sec_hdr_struct[sec_hdr_size], file_end) # MFS Low Level File 5 Integrity Structure
 				mfs_txt(file_sec_hdr.mfs_print(), file_folder, file_sec_path, 'w', False) # Store/Print MFS Low Level File 5 Integrity Info
 				if param.me11_mod_ext :
@@ -1665,7 +1665,7 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			else :
 				file_data = mfs_file[1][:] # MFS Low Level File 5 Contents
 			
-			mfs_write(file_folder, file_data_path, file_data) # Store MFS Low Level File 5 Contents
+			mfs_write(file_folder, file_data_path, file_data, param) # Store MFS Low Level File 5 Contents
 		
 		# Parse MFS Low Level File 6 (Intel Configuration) and 7 (OEM Configuration)
 		elif mfs_file[1] and mfs_file[0] in (6,7) :	
@@ -1724,11 +1724,11 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			
 			# Detect MFS Home Directory Record Size
 			home_rec_patt = list(re.compile(br'\x2E[\x00\xAA]{10}').finditer(mfs_file[1][:])) # Find the first Current (.) & Parent (..) directory markers
-			if len(home_rec_patt) < 2 : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected unknown Home Directory Record Structure!' + col_e, 'error', False, False, [])
+			if len(home_rec_patt) < 2 : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected unknown Home Directory Record Structure!' + col_e, 'error', False, False, [], err_stor, param)
 			home_rec_size = home_rec_patt[1].start() - home_rec_patt[0].start() - 1 # Determine MFS Home Directory Record Size via pattern offset difference
 			file_8_data = mfs_file[1][:-sec_hdr_size] # MFS Home Directory Root/Start (Low Level File 8) Contents
 			if divmod(len(file_8_data), home_rec_size)[1] != 0 :
-				mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected unknown Home Directory Record or Integrity Size!' + col_e, 'error', False, False, [])
+				mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected unknown Home Directory Record or Integrity Size!' + col_e, 'error', False, False, [], err_stor, param)
 				home_rec_size = 0x0 # Crash at next step due to division by 0
 			
 			file_8_records = divmod(len(file_8_data), home_rec_size)[0] # MFS Home Directory Root/Start (Low Level File 8) Records Count
@@ -1759,7 +1759,7 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 			mfs_parsed_idx.append(mfs_file[0]) # Set MFS Low Level File 9 as Parsed
 			file_9_folder = os.path.join(mea_dir, mfs_folder, '009 Manifest Backup', '') # MFS Manifest Backup root folder
 			file_9_data_path = os.path.join(file_9_folder, 'FTPR.man') # MFS Manifest Backup Contents Path
-			mfs_write(file_9_folder, file_9_data_path, mfs_file[1]) # Store MFS Manifest Backup Contents
+			mfs_write(file_9_folder, file_9_data_path, mfs_file[1], param) # Store MFS Manifest Backup Contents
 			# noinspection PyTypeChecker
 			ext_print = ext_anl(mfs_file[1], '$MN2', 0x1B, file_end, [variant,major,minor,hotfix,build], 'FTPR.man', [mfs_parsed_idx,intel_cfg_hash_mfs]) # Get Manifest Backup Extension Info
 			for man_pt in ext_print[1] : mfs_txt(man_pt, file_9_folder, os.path.join(file_9_folder + 'FTPR.man'), 'a', False) # Store MFS Manifest Backup Extension Info
@@ -1767,9 +1767,9 @@ def mfs_anl(mfs_folder, mfs_start, mfs_end, variant) :
 	# Store all Non-Parsed MFS Low Level Files
 	for mfs_file in mfs_files :
 		if mfs_file[1] and mfs_file[0] not in mfs_parsed_idx : # Check if MFS Low Level File has Contents but it has not been Parsed
-			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS Low Level File %d which has not been parsed!' % (mfs_file[0]) + col_e, 'error', False, False, [])
+			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected MFS Low Level File %d which has not been parsed!' % (mfs_file[0]) + col_e, 'error', False, False, [], err_stor, param)
 			mfs_file_path = os.path.join(mfs_folder, '%0.3d.bin' % mfs_file[0])
-			mfs_write(mfs_folder, mfs_file_path, mfs_file[1]) # Store MFS Low Level File
+			mfs_write(mfs_folder, mfs_file_path, mfs_file[1], param) # Store MFS Low Level File
 		
 	# Remember to also update any prior function return statements
 	return mfs_parsed_idx, intel_cfg_hash_mfs, mfs_info, pch_init_final
@@ -1846,7 +1846,7 @@ def mfs_home_anl(mfs_files, file_buffer, file_records, root_folder, home_rec_siz
 			file_rec_p.add_row(['Path', 'home']) # Add MFS Home Directory Root/Start Record Local Path "home" for printing
 			mfs_txt(file_rec_p, home_path, home_path, 'w', False) # Store/Print MFS Home Directory Root/Start Record Info
 			sec_path = os.path.normpath(os.path.join(init_folder, 'home_integrity')) # Set MFS Home Directory Root/Start Record Integrity Path
-			mfs_write(os.path.normpath(os.path.join(init_folder)), sec_path, file_sec) # Store MFS Home Directory Root/Start Record Integrity Contents
+			mfs_write(os.path.normpath(os.path.join(init_folder)), sec_path, file_sec, param) # Store MFS Home Directory Root/Start Record Integrity Contents
 			mfs_txt(sec_hdr.mfs_print(), home_path, home_path + '_integrity', 'w', False) # Store/Print MFS Home Directory Root/Start Record Integrity Info
 			
 		# Set current Low Level File as Parsed, skip Folder Marker Records
@@ -1854,7 +1854,7 @@ def mfs_home_anl(mfs_files, file_buffer, file_records, root_folder, home_rec_siz
 		
 		# Detect File System ID mismatch within MFS Home Directory
 		if file_index >= 8 and fs_id != 1 : # File System ID for MFS Home Directory (Low Level File >= 8) is 1 (home)
-			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected bad File System ID %d at MFS Home Directory > %0.3d %s' % (fs_id, file_index, file_name) + col_e, 'error', False, False, [])
+			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: Detected bad File System ID %d at MFS Home Directory > %0.3d %s' % (fs_id, file_index, file_name) + col_e, 'error', False, False, [], err_stor, param)
 		
 		# MFS Home Directory Record Nested Records Count
 		file_records = divmod(len(file_data), home_rec_size)[0]
@@ -1883,14 +1883,14 @@ def mfs_home_anl(mfs_files, file_buffer, file_records, root_folder, home_rec_siz
 		if rec_type == 0 :
 			file_path = os.path.normpath(os.path.join(root_folder, file_name)) # Set MFS Home Directory Record/File Path
 			rec_path = os.path.relpath(file_path, start=init_folder) if file_index >= 8 else mfs_type[fs_id] # Set actual Record Path for printing
-			mfs_write(os.path.normpath(os.path.join(root_folder)), file_path, file_data) # Store MFS Home Directory Record/File Contents
+			mfs_write(os.path.normpath(os.path.join(root_folder)), file_path, file_data, param) # Store MFS Home Directory Record/File Contents
 			file_rec_p = file_rec.mfs_print() # Get MFS Home Directory Record/File PrettyTable Object for printing adjustments
 			file_rec_p.add_row(['Path', rec_path]) # Add MFS Home Directory Record/File Local Path for printing
 			mfs_txt(file_rec_p, os.path.normpath(os.path.join(root_folder)), file_path, 'w', False) # Store/Print MFS Home Directory Record/File Info
 			
 			if integrity : # Store & Print MFS Home Directory Record/File Integrity
 				sec_path = os.path.normpath(os.path.join(root_folder, file_name + '_integrity')) # Set MFS Home Directory Record/File Integrity Path
-				mfs_write(os.path.normpath(os.path.join(root_folder)), sec_path, file_sec) # Store MFS Home Directory Record/File Integrity Contents
+				mfs_write(os.path.normpath(os.path.join(root_folder)), sec_path, file_sec, param) # Store MFS Home Directory Record/File Integrity Contents
 				mfs_txt(sec_hdr.mfs_print(), os.path.normpath(os.path.join(root_folder)), sec_path, 'w', False) # Store/Print MFS Home Directory Record/File Integrity Info
 			
 			# Append MFS Home Directory Record/File Info to Log
@@ -1912,7 +1912,7 @@ def mfs_home_anl(mfs_files, file_buffer, file_records, root_folder, home_rec_siz
 			
 			if integrity : # Store & Print MFS Home Directory Record/Folder Integrity
 				sec_path = os.path.normpath(os.path.join(root_folder, file_name + '_integrity')) # Set MFS Home Directory Record/Folder Integrity Path
-				mfs_write(os.path.normpath(os.path.join(root_folder)), sec_path, file_sec) # Store MFS Home Directory Record/Folder Integrity Contents
+				mfs_write(os.path.normpath(os.path.join(root_folder)), sec_path, file_sec, param) # Store MFS Home Directory Record/Folder Integrity Contents
 				mfs_txt(sec_hdr.mfs_print(), folder_path, folder_path + '_integrity', 'w', False) # Store/Print MFS Home Directory Record/Folder Integrity Info
 			
 			# Append MFS Home Directory Record/Folder Info to Log
@@ -1945,7 +1945,7 @@ def mfs_cfg_anl(mfs_file, buffer, rec_folder, root_folder, config_rec_size, pch_
 		if os.path.isfile(ftbl_json) :
 			with open(ftbl_json, 'r') as json_file : ftbl_dict = json.load(json_file)
 		else :
-			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS File Table Dictionary file is missing!' + col_e, 'error', False, False, [])
+			mfs_tmp_page = mfs_anl_msg(col_r + 'Error: MFS File Table Dictionary file is missing!' + col_e, 'error', False, False, [], err_stor, param)
 		
 	mfs_pt.title = col_y + 'MFS %s Configuration Records' % ('006 Intel' if mfs_file == 6 else '007 OEM') + col_e
 	
@@ -1973,7 +1973,7 @@ def mfs_cfg_anl(mfs_file, buffer, rec_folder, root_folder, config_rec_size, pch_
 			else : # Set & Store currently working File (Name & Contents)
 				rec_file = os.path.join(rec_folder, rec_name) # Add File name to currently working Folder path
 				rec_data = buffer[rec_offset:rec_offset + rec_size] # Get File Contents from MFS Low Level File
-				mfs_write(rec_folder, rec_file, rec_data) # Store File to currently working Folder
+				mfs_write(rec_folder, rec_file, rec_data, param) # Store File to currently working Folder
 				local_mfs_path = os.path.relpath(rec_file, start=root_folder) # Create Local MFS File Path
 				rec_hdr_pt.add_row(['Path', local_mfs_path]) # Add Local MFS File Path to MFS Configuration Record Structure Info
 				mfs_txt(rec_hdr_pt, rec_folder, rec_file, 'w', False) # Store/Print MFS Configuration Record Info
@@ -1995,12 +1995,12 @@ def mfs_cfg_anl(mfs_file, buffer, rec_folder, root_folder, config_rec_size, pch_
 			fitc_cfg,flag_unk = rec_hdr.get_flags() # Get Record Flags
 			
 			if '%0.2X' % vol_ftbl_id not in ftbl_dict :
-				if ftbl_dict : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: File Table Dictionary %0.2X does not exist!' % vol_ftbl_id + col_e, 'error', False, False, [])
+				if ftbl_dict : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: File Table Dictionary %0.2X does not exist!' % vol_ftbl_id + col_e, 'error', False, False, [], err_stor, param)
 				rec_path = os.path.normpath(os.path.join('/Unknown', '%0.8X.bin' % rec_id)) # Set generic/unknown File local path when errors occur
 				rec_file = os.path.normpath(rec_folder + rec_path) # Set generic/unknown File actual path when errors occur
 				rec_parent = os.path.normpath(os.path.join(rec_folder, 'Unknown')) # Set generic/unknown parent Folder actual path when errors occur
 			elif '%0.8X' % rec_id not in ftbl_dict['%0.2X' % vol_ftbl_id] :
-				if ftbl_dict : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: File Table Dictionary %0.2X does not contain ID %0.8X!' % (vol_ftbl_id,rec_id) + col_e, 'error', False, False, [])
+				if ftbl_dict : mfs_tmp_page = mfs_anl_msg(col_r + 'Error: File Table Dictionary %0.2X does not contain ID %0.8X!' % (vol_ftbl_id,rec_id) + col_e, 'error', False, False, [], err_stor, param)
 				rec_path = os.path.normpath(os.path.join('/Unknown', '%0.8X.bin' % rec_id)) # Set generic/unknown File local path when errors occur
 				rec_file = os.path.normpath(rec_folder + rec_path) # Set generic/unknown File actual path when errors occur
 				rec_parent = os.path.normpath(os.path.join(rec_folder, 'Unknown')) # Set generic/unknown parent Folder actual path when errors occur
@@ -2011,7 +2011,7 @@ def mfs_cfg_anl(mfs_file, buffer, rec_folder, root_folder, config_rec_size, pch_
 			
 			rec_name = os.path.basename(rec_file) # Get File Name
 			rec_data = buffer[rec_offset:rec_offset + rec_size] # Get File Contents from MFS Low Level File
-			mfs_write(rec_parent, rec_file, rec_data) # Store File to currently working Folder
+			mfs_write(rec_parent, rec_file, rec_data, param) # Store File to currently working Folder
 			rec_hdr_pt.add_row(['Path', rec_path]) # Add Local MFS File Path to MFS Configuration Record Structure Info
 			mfs_txt(rec_hdr_pt, rec_parent, rec_file, 'w', False) # Store/Print MFS Configuration Record Info
 			
@@ -2086,14 +2086,14 @@ def mfs_txt(struct_print, folder_path, file_path_wo_ext, mode, is_log) :
 			with open(file_path_wo_ext + '.json', mode, encoding = 'utf-8') as html : html.write('\n%s' % pt_json(struct_print)) # Store Structure Info JSON File
 	
 # Write MFS File Contents
-def mfs_write(folder_path, file_path, data) :
+def mfs_write(folder_path, file_path, data, param) :
 	if param.me11_mod_extr or param.me11_mod_bug : # Write File during CSE Unpacking
 		os.makedirs(folder_path, exist_ok=True) # Create the File's parent Folder, if needed
 		
 		with open(file_path, 'wb') as file : file.write(data)
 		
 # Store and show MFS Analysis Errors
-def mfs_anl_msg(mfs_err_msg, msg_type, is_page, is_chunk_crc, mfs_tmp_page) :
+def mfs_anl_msg(mfs_err_msg, msg_type, is_page, is_chunk_crc, mfs_tmp_page, err_stor, param):
 	if msg_type == 'error' : err_stor.append([mfs_err_msg, True])
 	
 	if param.me11_mod_extr and not is_page :
